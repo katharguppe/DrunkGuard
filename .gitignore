@@ -1,0 +1,70 @@
+# Gradle files
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+!**/src/androidTest/**/build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Keystore files
+*.jks
+*.keystore
+
+# External native build folder generated in Android Studio 2.2 and later
+.externalNativeBuild
+.cxx/
+
+# Google Services (e.g. APIs or Firebase)
+google-services.json
+
+# Android Profiling
+*.hprof
+
+# Kotlin
+*.class
+*.kotlin_module
+
+# Log files
+*.log
+
+# OS files
+Thumbs.db
+
+# Dev/build artifacts
+dev/
+logs/
+*.tmp
+*.bak
+
+# Keep stage and checkpoints for now (can be removed later)
+# stage/
+# checkpoints/
+
+# Beta images (large files)
+beta/**/*.jpg
+beta/**/*.jpeg
+beta/**/*.png
+!beta/**/*.gitkeep
+
+# Python ML outputs
+drunkguard-ml/outputs/
+drunkguard-ml/__pycache__/
+drunkguard-ml/*.pyc
+*.pyc
+__pycache__/
+*.pt
+*.pth
+*.tflite
+
+# Node (if any)
+node_modules/

@@ -1,0 +1,381 @@
+You are building a production-grade Android application called "DrunkGuard" — a field tool 
+for traffic police to detect intoxication levels, log offenders, and generate challans.
+WhatsApp integration is STUBBED for now (placeholder only). Testing uses a local 
+/beta/ folder with mock images instead of live camera.
+
+═══════════════════════════════════════════════════════════════
+PART 1: ML MODEL TRAINING PIPELINE (Python, runs on workstation)
+═══════════════════════════════════════════════════════════════
+
+Dataset:
+- Two directories: /data/sober/ and /data/drunk/ 
+  (with subfolders if available: slightly_drunk, moderately_drunk, heavily_drunk)
+- Task: Multi-class classification — Sober / Slightly Drunk / Moderately Drunk / 
+  Heavily Drunk
+
+Steps to implement:
+
+1. Data preprocessing:
+   - Load images, resize to 224x224
+   - Augment: horizontal flip, brightness jitter, slight rotation (±10°), gaussian blur
+   - Split: 70% train / 15% val / 15% test — stratified split
+   - Normalize using ImageNet mean/std: mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225]
+
+2. Model architecture:
+   - Backbone: MobileNetV3-Small (pretrained=True, ImageNet weights)
+   - Replace classifier head with:
+       Dropout(0.3) → Linear(576, 128) → ReLU → Linear(128, 4)
+   - 4 output classes: [Sober, SlightlyDrunk, ModeratelyDrunk, HeavilyDrunk]
+   - Target model size: < 10MB for on-device TFLite deployment
+
+3. Training:
+   - Optimizer: AdamW, lr=1e-4, weight_decay=1e-2
+   - Scheduler: CosineAnnealingLR
+   - Loss: CrossEntropyLoss with per-class weights (handle imbalance)
+   - Early stopping on val loss (patience=7)
+   - Log per epoch: train loss, val loss, accuracy, macro F1
+
+4. Evaluation (evaluate.py):
+   - Full sklearn classification_report on test set
+   - Per-class ROC curves plotted and saved as /outputs/roc_curves.png
+   - Confusion matrix saved as /outputs/confusion_matrix.png
+   - Print top-3 misclassified samples with their predicted vs actual label
+
+5. Export (export_to_tflite.py):
+   - Load best_model.pt
+   - Convert via ONNX → TFLite with INT8 post-training quantization
+   - Validate TFLite output matches PyTorch output on 10 test samples
+   - Save as /outputs/best_model.tflite
+   - Write metadata JSON: { input_shape, class_labels, mean, std, quantized: true }
+
+Deliverables: train.py, evaluate.py, export_to_tflite.py, requirements.txt
+
+═══════════════════════════════════════════════════════════════
+PART 2: BETA TESTING MOCK SYSTEM
+═══════════════════════════════════════════════════════════════
+
+Create a /beta/ folder in the Android project assets AND in a local directory:
+
+  /beta/
+    sober/         ← drop sober test face images here (.jpg/.png)
+    slightly/      ← slightly drunk test images
+    moderately/    ← moderately drunk test images
+    heavily/       ← heavily drunk test images
+    vehicles/      ← plate images for ANPR mock testing
+    mock_data.json ← pre-filled mock session data (see schema below)
+
+mock_data.json schema:
+{
+  "officer": {
+    "badgeId": "KA2301",
+    "name": "Ravi Kumar",
+    "station": "Koramangala Traffic PS",
+    "password": "test1234"
+  },
+  "vehicle": {
+    "plate": "KA03MJ2247",
+    "type": "Car",
+    "color": "White",
+    "make": "Maruti Swift"
+  },
+  "location": {
+    "latitude": 12.9352,
+    "longitude": 77.6245,
+    "address": "100 Feet Road, Koramangala, Bengaluru"
+  }
+}
+
+Beta Mode Behavior (activated by a toggle in Settings or a DEV MODE flag):
+  - LOGIN: Auto-fills credentials from mock_data.json. One tap "Use Mock Officer" button.
+  - CAMERA (Subject Photo): Instead of opening CameraX, show a grid picker of images 
+    from /beta/sober/, /beta/slightly/, /beta/moderately/, /beta/heavily/
+    User taps an image → it is treated exactly as if the camera captured it
+    → runs through TFLite inference pipeline identically to real mode
+  - CAMERA (ANPR): Instead of live camera, show picker from /beta/vehicles/
+    → runs through MLKit text recognition on the selected image
+    → auto-fills plate number field
+  - GPS: Instead of real GPS, injects coordinates from mock_data.json location block
+    → shows pin on map at mock location
+    → reverse geocodes or uses mock address string directly
+  - VEHICLE FORM: Offers a "Fill Mock Data" button that populates all fields from 
+    mock_data.json vehicle block
+  - CHALLAN GENERATION: Fully functional — generates real PDF with all mock data
+  - WHATSAPP: Show a button labeled "Share via WhatsApp (Coming Soon)" 
+    → tapping it shows a SnackBar: "WhatsApp integration will be available in v2.0"
+    → logs the intent to Room DB field whatsapp_sent = false
+  - All data saved to Room DB exactly as in production flow
+
+Beta Mode visual indicator:
+  - Show a persistent yellow banner at top of every screen: "⚠ BETA / TEST MODE"
+  - Tapping it shows a dialog explaining what is mocked vs real
+
+═══════════════════════════════════════════════════════════════
+PART 3: ANDROID APPLICATION (Kotlin, minSDK 26, targetSDK 34)
+═══════════════════════════════════════════════════════════════
+
+Architecture: MVVM + Clean Architecture
+DI: Hilt
+DB: Room
+Image loading: Coil
+PDF: iText7 for Android
+Maps: Google Maps SDK + FusedLocationProvider
+Camera: CameraX (used in production mode)
+OCR: Google MLKit Text Recognition
+TFLite: org.tensorflow:tensorflow-lite + support library
+
+── SCREEN 1: Officer Login ──
+  - Fields: Badge ID, Password
+  - "Use Mock Officer" button (beta mode only, auto-fills from mock_data.json)
+  - Biometric unlock option (FingerprintManager / BiometricPrompt)
+  - Validation + error states
+  - On success → save OfficerSession to Room DB
+
+── SCREEN 2: Dashboard ──
+  - Officer info card: name, badge, station
+  - Today's stats: checks completed, violations found
+  - "New Check" CTA button
+  - Recent challans list (RecyclerView, tappable)
+  - Settings icon → Settings screen
+  - Logout
+
+── SCREEN 3: New Check Wizard (3 steps, ViewPager2 or stepped nav) ──
+
+  Step 1 — Vehicle:
+    - Plate number field (manual entry)
+    - "Scan Plate" button:
+        PROD: Opens CameraX → capture → MLKit text recognition → auto-fill
+        BETA: Opens /beta/vehicles/ image picker → MLKit text recognition → auto-fill
+    - Vehicle type dropdown: Car / Bike / Auto / Truck / Bus
+    - Color, Make/Model fields
+    - "Fill Mock Data" button (beta only)
+
+  Step 2 — Location:
+    - PROD: FusedLocationProviderClient fetches real GPS
+    - BETA: Injects mock lat/lng from mock_data.json
+    - Reverse geocode → display address string
+    - Embedded Google Map with draggable pin
+    - Timestamp: auto, read-only
+
+  Step 3 — Subject Photo & Detection:
+    - "Capture Photo" button:
+        PROD: Opens CameraX preview → capture
+        BETA: Shows image grid picker from /beta/{category}/ folders
+              (folders labeled: Sober, Slightly Drunk, Moderately Drunk, Heavily Drunk)
+              User picks image → flows through inference exactly like PROD
+    - TFLite inference via TFLiteInferenceHelper.kt:
+        * Load best_model.tflite from /assets/
+        * Preprocess: resize 224x224 → normalize (ImageNet stats) → ByteBuffer
+        * Run inference → softmax probabilities for 4 classes
+        * Return: { label: String, confidence: Float, allScores: FloatArray }
+    - Display:
+        * Subject photo thumbnail
+        * Horizontal bar chart showing confidence % for each class
+        * Large verdict badge: color-coded
+            GREEN = Sober, YELLOW = Slightly, ORANGE = Moderately, RED = Heavily
+        * Confidence score shown as percentage
+    - If Sober + confidence > threshold → "No Violation" button (closes, logs as clear)
+    - Else → "Proceed to Challan" button
+
+── SCREEN 4: Challan Generator ──
+  Auto-populated, all editable:
+    - Challan ID: UUID, auto-generated
+    - Officer: name, badge, station (from session)
+    - Date & time: auto
+    - Location: address + GPS coords
+    - Vehicle: plate, type, color, make
+    - Subject photo thumbnail
+    - Intoxication verdict + confidence %
+    - Applicable sections (auto-suggested):
+        Sober → none
+        Slightly → Section 185 MV Act (suggestion)
+        Moderately → Section 185 + 190 MV Act
+        Heavily → Section 185 + 190 + 304A IPC
+    - Fine amount: pulled from Settings (configurable per severity)
+    - Remarks: free text field
+
+  Actions:
+    - "Generate PDF" → iText7 generates formatted A4 PDF:
+        * Header: [DrunkGuard Logo placeholder] + "Traffic Challan"
+        * All fields in a clean table layout
+        * Subject photo embedded
+        * QR code (ZXing) encoding challan UUID
+        * Footer: officer signature line + station stamp placeholder
+        * Saved to app private storage, path stored in Room DB
+    - "Preview PDF" → open PDF in-app viewer
+    - "Share via WhatsApp" → STUBBED:
+        BETA + PROD: Shows SnackBar "WhatsApp integration coming in v2.0"
+        Logs attempted share to DB
+    - "Save Record" → persist full Check record to Room DB
+
+── SCREEN 5: Records ──
+  - RecyclerView list of all Check records
+  - Filter bar: by date range, officer badge, plate number, verdict
+  - Each card shows: date, plate, verdict badge, officer name
+  - Tap → full detail view with PDF preview button
+  - "Export CSV" button → writes all records to Downloads/drunkguard_export.csv
+
+── Settings Screen ──
+  - Fine amounts (editable): Slightly / Moderately / Heavily
+  - Confidence threshold slider (0.5 – 0.95, default 0.65)
+  - Station name / jurisdiction text field
+  - Beta Mode toggle (prominent, shows warning dialog on enable)
+  - Dark / Light mode toggle
+  - App version display
+
+═══════════════════════════════════════════════════════════════
+PART 4: KEY KOTLIN FILES TO GENERATE
+═══════════════════════════════════════════════════════════════
+
+TFLiteInferenceHelper.kt:
+  - Loads model from assets
+  - Preprocesses Bitmap → ByteBuffer (resize, normalize)
+  - Runs interpreter
+  - Returns InferenceResult(label, confidence, allScores)
+  - Handles model load errors gracefully with fallback message
+
+ANPRHelper.kt:
+  - Takes Bitmap input (from camera or beta picker)
+  - Runs MLKit TextRecognizer
+  - Filters result for Indian plate regex: [A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}
+  - Returns best plate candidate or null
+
+GeoHelper.kt:
+  - PROD: Wraps FusedLocationProviderClient with coroutine suspend fun
+  - BETA: Returns mock LatLng from BetaMockProvider
+  - Reverse geocodes using Geocoder
+
+PDFGenerator.kt:
+  - Uses iText7 to build challan PDF
+  - Accepts ChallaNData data class
+  - Embeds subject photo as scaled image
+  - Generates QR code via ZXing → embeds in PDF
+  - Returns File reference to saved PDF
+
+WhatsAppSender.kt (STUB):
+  - Single function: fun sendChallan(context: Context, pdfFile: File, phone: String)
+  - Body: Log.d("WhatsApp", "STUB: Would send $pdfFile to $phone") 
+  - Shows Toast: "WhatsApp coming in v2.0"
+  - Returns Result.failure with StubException("Not yet implemented")
+
+BetaMockProvider.kt:
+  - Reads mock_data.json from assets
+  - Provides: getMockOfficer(), getMockVehicle(), getMockLocation()
+  - listBetaImages(category: BetaCategory): List<Bitmap>
+    where BetaCategory = SOBER | SLIGHTLY | MODERATELY | HEAVILY | VEHICLES
+
+═══════════════════════════════════════════════════════════════
+PART 5: ROOM DATABASE SCHEMA
+═══════════════════════════════════════════════════════════════
+
+@Entity Officer(id, badgeId, name, station, passwordHash, createdAt)
+
+@Entity VehicleCheck(
+  id, officerId, timestamp, 
+  latitude, longitude, address,
+  plateNumber, vehicleType, vehicleColor, vehicleMake,
+  subjectPhotoPath, 
+  intoxicationLevel,   ← ENUM: SOBER/SLIGHTLY/MODERATELY/HEAVILY
+  confidenceScore,     ← Float
+  challaNId,           ← UUID string
+  pdfPath,
+  whatsappSent,        ← Boolean, default false
+  isMockData           ← Boolean, marks beta test records
+)
+
+@Entity AppSettings(key: String PK, value: String)
+
+Provide DAOs + Repository classes for all entities.
+
+═══════════════════════════════════════════════════════════════
+PART 6: PERMISSIONS (AndroidManifest.xml)
+═══════════════════════════════════════════════════════════════
+
+CAMERA, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION,
+READ_EXTERNAL_STORAGE (SDK < 33), READ_MEDIA_IMAGES (SDK >= 33),
+WRITE_EXTERNAL_STORAGE (SDK < 29), INTERNET,
+USE_BIOMETRIC, USE_FINGERPRINT,
+QUERY_ALL_PACKAGES (for future WhatsApp intent, can be disabled for now)
+
+═══════════════════════════════════════════════════════════════
+PART 7: PROJECT FOLDER STRUCTURE
+═══════════════════════════════════════════════════════════════
+
+drunkguard-ml/
+  train.py
+  evaluate.py
+  export_to_tflite.py
+  requirements.txt
+  /outputs/          ← generated during training
+
+drunkguard-app/
+  /app/src/main/
+    /assets/
+      best_model.tflite
+      model_metadata.json
+      mock_data.json
+      /beta/
+        /sober/        ← user drops test images here
+        /slightly/
+        /moderately/
+        /heavily/
+        /vehicles/
+    /java/.../drunkguard/
+      /di/             ← Hilt modules (AppModule, DatabaseModule, MLModule)
+      /data/
+        /db/           ← Room DB, DAOs
+        /repository/   ← OfficerRepo, CheckRepo, SettingsRepo
+        /model/        ← data classes: Officer, VehicleCheck, ChallaNData
+      /domain/
+        /usecase/      ← RunInferenceUseCase, GenerateChallaNUseCase, etc.
+      /ui/
+        /login/
+        /dashboard/
+        /newcheck/     ← step fragments + shared NewCheckViewModel
+        /challan/
+        /records/
+        /settings/
+        /common/       ← shared composables / view components
+      /ml/
+        TFLiteInferenceHelper.kt
+        InferenceResult.kt
+      /utils/
+        ANPRHelper.kt
+        GeoHelper.kt
+        PDFGenerator.kt
+        WhatsAppSender.kt   ← STUB
+        BetaMockProvider.kt
+        BetaImagePickerDialog.kt
+      /beta/
+        BetaCategory.kt  ← enum
+        BetaModeManager.kt
+
+═══════════════════════════════════════════════════════════════
+DELIVERABLES CHECKLIST — verify each before finishing
+═══════════════════════════════════════════════════════════════
+
+[ ] train.py, evaluate.py, export_to_tflite.py all runnable
+[ ] Full Android project compiles in Android Studio without errors
+[ ] Beta mode toggle works — yellow banner shown on all screens
+[ ] Beta image picker replaces camera in Step 3 when beta mode ON
+[ ] ANPR mock picker works from /beta/vehicles/ images
+[ ] Mock GPS injected from mock_data.json in beta mode
+[ ] TFLite inference runs on picked image, returns verdict + confidence bars
+[ ] Challan PDF generated with iText7, includes QR code
+[ ] WhatsApp button shows stub SnackBar message
+[ ] Room DB persists all records; beta records flagged with isMockData=true
+[ ] Records screen shows all saved checks, CSV export works
+[ ] Settings: fine amounts, threshold, beta toggle all persist via Room
+[ ] README.md:
+      - How to train model and export TFLite
+      - How to copy best_model.tflite into /assets/
+      - How to populate /beta/ folders with test images
+      - How to enable beta mode and run the full mock drill end to end
+      - How to build and run on emulator vs real device
+
+Begin by generating the full folder structure and all file stubs,
+then implement each module fully, starting with:
+1. TFLiteInferenceHelper.kt
+2. BetaMockProvider.kt + BetaImagePickerDialog.kt
+3. The New Check Wizard (Step 3 — inference)
+4. PDFGenerator.kt
+5. Remaining screens and wiring

@@ -1,0 +1,19 @@
+{
+  "officer": {
+    "badgeId": "KA2301",
+    "name": "Ravi Kumar",
+    "station": "Koramangala Traffic PS",
+    "password": "test1234"
+  },
+  "vehicle": {
+    "plate": "KA03MJ2247",
+    "type": "Car",
+    "color": "White",
+    "make": "Maruti Swift"
+  },
+  "location": {
+    "latitude": 12.9352,
+    "longitude": 77.6245,
+    "address": "100 Feet Road, Koramangala, Bengaluru"
+  }
+}
