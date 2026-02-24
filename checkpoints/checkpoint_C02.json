@@ -1,0 +1,29 @@
+{
+  "checkpoint_id": "C02",
+  "component_name": "RoomDatabase",
+  "timestamp": "2026-02-24T00:00:00Z",
+  "status": "STAGED",
+  "files_created": [
+    "data/model/IntoxicationLevel.kt",
+    "data/model/Officer.kt",
+    "data/model/VehicleCheck.kt",
+    "data/model/AppSettings.kt",
+    "data/db/DrunkGuardDatabase.kt",
+    "data/db/OfficerDao.kt",
+    "data/db/VehicleCheckDao.kt",
+    "data/db/SettingsDao.kt",
+    "data/repository/OfficerRepository.kt",
+    "data/repository/VehicleCheckRepository.kt",
+    "data/repository/SettingsRepository.kt",
+    "di/DatabaseModule.kt"
+  ],
+  "files_modified": [],
+  "tests": {
+    "unit": { "passed": 7, "failed": 0 },
+    "integration": { "passed": 0, "failed": 0 },
+    "regression": { "passed": 0, "failed": 0, "components_checked": ["C01"] }
+  },
+  "known_issues": [],
+  "next_component": "C03",
+  "context_note": "Room database with Officer, VehicleCheck, AppSettings entities. Repositories return Result<T>. SettingsRepository has default values for fines, thresholds, beta/dark mode."
+}
