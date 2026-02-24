@@ -46,6 +46,11 @@ logs/
 *.tmp
 *.bak
 
+# Dataset files (large, don't commit)
+DRUNK/
+SOBER/
+*.zip
+
 # Keep stage and checkpoints for now (can be removed later)
 # stage/
 # checkpoints/
