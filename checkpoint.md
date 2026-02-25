@@ -48,7 +48,7 @@
 - Exception handling: ModelLoadException, InferenceException
 - Unit tests for all components
 
-**Commit:** `TBD`
+**Commit:** `17debaa`
 
 ---
 
@@ -127,6 +127,26 @@ BetaMockProvider:
   - listBetaImages(category): List<Bitmap>
   - getRandomBetaImage(category): Bitmap?
   - hasBetaImages(category): Boolean
+```
+
+### ML Components (Hilt-injected)
+```kotlin
+TFLiteInferenceHelper:
+  - isModelLoaded: Boolean
+  - loadModel(): Result<Unit>
+  - preprocess(bitmap): ByteBuffer
+  - runInference(input): InferenceResult
+  - detect(bitmap): Result<InferenceResult>
+  - detectGrayscale(bitmap): Result<InferenceResult>
+  - getAllProbabilities(bitmap): Map<IntoxicationLevel, Float>
+  - close()
+
+InferenceResult:
+  - level: IntoxicationLevel
+  - confidence: Float
+  - probabilities: FloatArray
+  - isConfident(threshold): Boolean
+  - getProbabilityForLevel(level): Float
 ```
 
 ### Repositories (Hilt-injected)
