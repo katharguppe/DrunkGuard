@@ -1,9 +1,9 @@
 # DrunkGuard Build Checkpoint
 
-**Date:** 2026-02-24
-**Status:** C02 Complete, Ready for C03
+**Date:** 2026-02-25
+**Status:** C03 Complete, Ready for C04
 **Git Branch:** master
-**Total Commits:** 2
+**Total Commits:** 3
 
 ---
 
@@ -19,7 +19,7 @@
 - mock_data.json in assets
 - Git repository initialized
 
-**Commit:** `13f7154`
+**Commit:** `1a9ecf3`
 
 ### C02 - RoomDatabase ✅
 - Entities: Officer, VehicleCheck, AppSettings, IntoxicationLevel enum
@@ -28,7 +28,17 @@
 - Database class with TypeConverters
 - Hilt DatabaseModule
 
-**Commit:** `7920308`
+**Commit:** `fef7d7f`
+
+### C03 - BetaMockProvider ✅
+- BetaCategory enum: SOBER, SLIGHTLY, MODERATELY, HEAVILY, VEHICLES
+- BetaModeManager: Hilt singleton with StateFlow for beta state
+- BetaMockProvider: Reads mock_data.json, loads beta images
+- Data classes: MockVehicle, MockLocation
+- Hilt BetaModule for DI
+- Unit tests for all components
+
+**Commit:** `e36c4b1`
 
 ---
 
@@ -42,21 +52,31 @@ D:\Vignesh\
 │       ├── assets/mock_data.json
 │       ├── java/com/traffic/drunkguard/
 │       │   ├── DrunkGuardApp.kt
+│       │   ├── beta/                   # NEW: BetaCategory, BetaModeManager
 │       │   ├── data/
 │       │   │   ├── db/                 # Room DAOs
 │       │   │   ├── model/              # Entities
 │       │   │   └── repository/         # Repositories
 │       │   ├── di/
-│       │   │   └── DatabaseModule.kt
-│       │   └── ui/
-│       │       ├── MainActivity.kt
-│       │       ├── login/
-│       │       ├── dashboard/
-│       │       ├── newcheck/
-│       │       ├── challan/
-│       │       ├── records/
-│       │       └── settings/
+│       │   │   ├── DatabaseModule.kt
+│       │   │   └── BetaModule.kt       # NEW: Hilt module for beta
+│       │   ├── ui/
+│       │   │   ├── MainActivity.kt
+│       │   │   ├── login/
+│       │   │   ├── dashboard/
+│       │   │   ├── newcheck/
+│       │   │   ├── challan/
+│       │   │   ├── records/
+│       │   │   └── settings/
+│       │   └── utils/
+│       │       └── BetaMockProvider.kt # NEW: Mock data provider
 │       └── res/                        # All resources created
+├── beta/                               # Test image folders (empty)
+│   ├── sober/
+│   ├── slightly/
+│   ├── moderately/
+│   ├── heavily/
+│   └── vehicles/
 ├── checkpoints/
 │   ├── checkpoint_C01.json
 │   ├── checkpoint_C02.json
@@ -64,13 +84,10 @@ D:\Vignesh\
 │   └── api_surface.md
 ├── tests/
 │   ├── C01/ProjectScaffoldTest.kt
-│   └── C02/RoomDatabaseTest.kt
-├── beta/                               # Empty folders for test images
-│   ├── sober/
-│   ├── slightly/
-│   ├── moderately/
-│   ├── heavily/
-│   └── vehicles/
+│   ├── C02/RoomDatabaseTest.kt
+│   └── C03/BetaMockProviderTest.kt     # NEW
+├── checkpoint.md                       # THIS FILE
+├── task.md                             # NEXT COMPONENT TASKS
 ├── build.gradle
 ├── settings.gradle
 └── .gitignore
@@ -78,7 +95,24 @@ D:\Vignesh\
 
 ---
 
-## Key API Surface (From C02)
+## Key API Surface (From C03)
+
+### Beta Components (Hilt-injected)
+```kotlin
+BetaModeManager:
+  - isBetaMode: StateFlow<Boolean>
+  - initialize() / refresh()
+  - setBetaMode(enabled): Result<Unit>
+  - isBetaModeSync(): Boolean
+
+BetaMockProvider:
+  - getMockOfficer(): Officer?
+  - getMockVehicle(): MockVehicle?
+  - getMockLocation(): MockLocation?
+  - listBetaImages(category): List<Bitmap>
+  - getRandomBetaImage(category): Bitmap?
+  - hasBetaImages(category): Boolean
+```
 
 ### Repositories (Hilt-injected)
 ```kotlin
@@ -104,14 +138,14 @@ SettingsRepository:
 
 ---
 
-## Next Component: C03 - BetaMockProvider
+## Next Component: C04 - TFLiteInferenceHelper
 
 **Files to create:**
-- `beta/BetaCategory.kt` - Enum for image categories
-- `beta/BetaModeManager.kt` - Singleton to check beta state
-- `utils/BetaMockProvider.kt` - Reads mock_data.json, provides mock data
+- `ml/TFLiteInferenceHelper.kt` - Load TFLite model, preprocess, run inference
+- `ml/InferenceResult.kt` - Data class for results (level, confidence)
+- `di/MLModule.kt` - Hilt module for ML components
 
-**Dependencies:** Uses C02 repositories, SettingsRepository.isBetaMode()
+**Dependencies:** Uses C03 BetaMockProvider for test images in beta mode
 
 ---
 
@@ -119,8 +153,7 @@ SettingsRepository:
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| C03 | BetaMockProvider | NEXT |
-| C04 | TFLiteInferenceHelper | Pending |
+| C04 | TFLiteInferenceHelper | NEXT |
 | C05 | ANPRHelper | Pending |
 | C06 | GeoHelper | Pending |
 | C07 | PDFGenerator | Pending |
@@ -139,7 +172,7 @@ SettingsRepository:
 
 ## Resume Instructions
 
-To continue from this checkpoint tomorrow:
+To continue from this checkpoint:
 
 1. **Read checkpoint files:**
    ```bash
@@ -153,9 +186,9 @@ To continue from this checkpoint tomorrow:
    git status
    ```
 
-3. **Start from C03:**
-   - Create `dev/C03/` folder
-   - Build BetaCategory enum, BetaModeManager, BetaMockProvider
+3. **Start from C04:**
+   - Create `dev/C04/` folder
+   - Build TFLiteInferenceHelper, InferenceResult, MLModule
    - Follow per-component workflow (PLAN → BUILD → TEST → PROMOTE → CHECKPOINT)
 
 4. **If session was interrupted:**
@@ -173,3 +206,5 @@ To continue from this checkpoint tomorrow:
 - Beta folders exist but are empty (populate with test images later)
 - Dataset folders (DRUNK/, SOBER/, *.zip) are gitignored
 - mock_data.json is in assets and committed
+- C03 adds BetaModeManager with StateFlow for reactive UI updates
+- BetaMockProvider is a singleton accessed via `BetaMockProvider.getInstance(context)`

@@ -1,40 +1,38 @@
 # DrunkGuard Build Tasks
 
-**Current:** C03 - BetaMockProvider
+**Current:** C04 - TFLiteInferenceHelper
 **Remaining:** C04-C17
 
 ---
 
 ## C03 - BetaMockProvider
-**Status:** NOT STARTED
-**Priority:** HIGH
-**Blocked by:** None (C02 complete)
+**Status:** ✅ COMPLETE
 
-### Files to Create:
-- [ ] `beta/BetaCategory.kt` - Enum with SOBER, SLIGHTLY, MODERATELY, HEAVILY, VEHICLES
-- [ ] `beta/BetaModeManager.kt` - Singleton injected via Hilt, reads isBetaMode from SettingsRepository
-- [ ] `utils/BetaMockProvider.kt` - Reads mock_data.json from assets, provides:
+### Files Created:
+- [x] `beta/BetaCategory.kt` - Enum with SOBER, SLIGHTLY, MODERATELY, HEAVILY, VEHICLES
+- [x] `beta/BetaModeManager.kt` - Singleton injected via Hilt, reads isBetaMode from SettingsRepository
+- [x] `utils/BetaMockProvider.kt` - Reads mock_data.json from assets, provides:
   - getMockOfficer(): Officer
   - getMockVehicle(): MockVehicle data class
   - getMockLocation(): MockLocation data class
   - listBetaImages(category: BetaCategory): List<Bitmap>
 
 ### Tests:
-- [ ] BetaMockProvider can parse mock_data.json
-- [ ] BetaModeManager reflects settings state
-- [ ] BetaCategory enum covers all cases
+- [x] BetaMockProvider can parse mock_data.json
+- [x] BetaModeManager reflects settings state
+- [x] BetaCategory enum covers all cases
 
 ### Acceptance Criteria:
-- [ ] BetaModeManager.isBeta() returns value from SettingsRepository
-- [ ] BetaMockProvider can load mock officer, vehicle, location
-- [ ] BetaMockProvider can list images from beta/ folders
+- [x] BetaModeManager.isBeta() returns value from SettingsRepository
+- [x] BetaMockProvider can load mock officer, vehicle, location
+- [x] BetaMockProvider can list images from beta/ folders
 
 ---
 
 ## C04 - TFLiteInferenceHelper
-**Status:** PENDING
+**Status:** NEXT
 **Priority:** HIGH
-**Blocked by:** C03
+**Blocked by:** None (C03 complete)
 
 ### Files to Create:
 - [ ] `ml/TFLiteInferenceHelper.kt` - Load model, preprocess, run inference
@@ -46,6 +44,12 @@
 - [ ] preprocess(bitmap): ByteBuffer (224x224, ImageNet normalize)
 - [ ] runInference(input): InferenceResult
 - [ ] close() - release resources
+
+### Acceptance Criteria:
+- [ ] Model loads from assets/model/drunkguard.tflite
+- [ ] Preprocessing converts Bitmap to ByteBuffer (224x224, normalized)
+- [ ] Inference returns 4-class probabilities
+- [ ] Close() releases interpreter resources
 
 ---
 
@@ -273,8 +277,8 @@
 ```
 C01  [██████████] DONE
 C02  [██████████] DONE
-C03  [          ] NEXT
-C04  [          ] PENDING
+C03  [██████████] DONE
+C04  [          ] NEXT
 C05  [          ] PENDING
 C06  [          ] PENDING
 C07  [          ] PENDING
