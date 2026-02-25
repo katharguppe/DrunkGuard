@@ -1,7 +1,7 @@
 # DrunkGuard Build Tasks
 
-**Current:** C04 - TFLiteInferenceHelper
-**Remaining:** C04-C17
+**Current:** C05 - ANPRHelper
+**Remaining:** C05-C17
 
 ---
 
@@ -30,26 +30,43 @@
 ---
 
 ## C04 - TFLiteInferenceHelper
-**Status:** NEXT
-**Priority:** HIGH
-**Blocked by:** None (C03 complete)
+**Status:** ✅ COMPLETE
 
-### Files to Create:
-- [ ] `ml/TFLiteInferenceHelper.kt` - Load model, preprocess, run inference
-- [ ] `ml/InferenceResult.kt` - Data class for results
-- [ ] `di/MLModule.kt` - Hilt module for ML components
+### Files Created:
+- [x] `ml/TFLiteInferenceHelper.kt` - Load model, preprocess, run inference
+- [x] `ml/InferenceResult.kt` - Data class for results
+- [x] `di/MLModule.kt` - Hilt module for ML components
 
 ### Functions:
-- [ ] loadModel(context)
-- [ ] preprocess(bitmap): ByteBuffer (224x224, ImageNet normalize)
-- [ ] runInference(input): InferenceResult
-- [ ] close() - release resources
+- [x] loadModel(context)
+- [x] preprocess(bitmap): ByteBuffer (224x224, ImageNet normalize)
+- [x] runInference(input): InferenceResult
+- [x] close() - release resources
 
 ### Acceptance Criteria:
-- [ ] Model loads from assets/model/drunkguard.tflite
-- [ ] Preprocessing converts Bitmap to ByteBuffer (224x224, normalized)
-- [ ] Inference returns 4-class probabilities
-- [ ] Close() releases interpreter resources
+- [x] Model loads from assets/model/drunkguard.tflite
+- [x] Preprocessing converts Bitmap to ByteBuffer (224x224, normalized)
+- [x] Inference returns 4-class probabilities
+- [x] Close() releases interpreter resources
+
+---
+
+## C05 - ANPRHelper
+**Status:** NEXT
+**Priority:** HIGH
+**Blocked by:** None (C04 complete)
+
+### Files to Create:
+- [ ] `utils/ANPRHelper.kt` - MLKit text recognition for license plates
+
+### Functions:
+- [ ] recognizePlate(bitmap): String? - Extract license plate text
+- [ ] Filter with regex: `[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}`
+
+### Acceptance Criteria:
+- [ ] ANPRHelper integrates MLKit text recognition
+- [ ] Returns formatted license plate string or null
+- [ ] Uses regex validation for Indian license plates
 
 ---
 
@@ -278,8 +295,8 @@
 C01  [██████████] DONE
 C02  [██████████] DONE
 C03  [██████████] DONE
-C04  [          ] NEXT
-C05  [          ] PENDING
+C04  [██████████] DONE
+C05  [          ] NEXT
 C06  [          ] PENDING
 C07  [          ] PENDING
 C08  [          ] PENDING

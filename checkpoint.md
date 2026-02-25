@@ -1,9 +1,9 @@
 # DrunkGuard Build Checkpoint
 
 **Date:** 2026-02-25
-**Status:** C03 Complete, Ready for C04
+**Status:** C04 Complete, Ready for C05
 **Git Branch:** master
-**Total Commits:** 3
+**Total Commits:** 4
 
 ---
 
@@ -40,6 +40,16 @@
 
 **Commit:** `e36c4b1`
 
+### C04 - TFLiteInferenceHelper ✅
+- TFLiteInferenceHelper: Loads TFLite model, runs inference
+- InferenceResult: Data class with level, confidence, probabilities
+- MLModule: Hilt module for ML components
+- Image preprocessing: 224x224 resize, ImageNet normalization
+- Exception handling: ModelLoadException, InferenceException
+- Unit tests for all components
+
+**Commit:** `TBD`
+
 ---
 
 ## Project Structure (Current)
@@ -59,7 +69,11 @@ D:\Vignesh\
 │       │   │   └── repository/         # Repositories
 │       │   ├── di/
 │       │   │   ├── DatabaseModule.kt
-│       │   │   └── BetaModule.kt       # NEW: Hilt module for beta
+│       │   │   ├── BetaModule.kt       # NEW: Hilt module for beta
+│       │   │   └── MLModule.kt         # NEW: Hilt module for ML
+│       │   ├── ml/                     # NEW: ML components
+│       │   │   ├── TFLiteInferenceHelper.kt
+│       │   │   └── InferenceResult.kt
 │       │   ├── ui/
 │       │   │   ├── MainActivity.kt
 │       │   │   ├── login/
@@ -85,7 +99,8 @@ D:\Vignesh\
 ├── tests/
 │   ├── C01/ProjectScaffoldTest.kt
 │   ├── C02/RoomDatabaseTest.kt
-│   └── C03/BetaMockProviderTest.kt     # NEW
+│   ├── C03/BetaMockProviderTest.kt
+│   └── C04/TFLiteInferenceHelperTest.kt # NEW
 ├── checkpoint.md                       # THIS FILE
 ├── task.md                             # NEXT COMPONENT TASKS
 ├── build.gradle
@@ -138,23 +153,23 @@ SettingsRepository:
 
 ---
 
-## Next Component: C04 - TFLiteInferenceHelper
+## Next Component: C05 - ANPRHelper
 
 **Files to create:**
-- `ml/TFLiteInferenceHelper.kt` - Load TFLite model, preprocess, run inference
-- `ml/InferenceResult.kt` - Data class for results (level, confidence)
-- `di/MLModule.kt` - Hilt module for ML components
+- `utils/ANPRHelper.kt` - MLKit text recognition for license plates
 
-**Dependencies:** Uses C03 BetaMockProvider for test images in beta mode
+**Functions:**
+- `recognizePlate(bitmap): String?` - Extract license plate text
+- Filter with regex: `[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}`
 
 ---
 
-## Remaining Components (C04-C17)
+## Remaining Components (C05-C17)
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| C04 | TFLiteInferenceHelper | NEXT |
-| C05 | ANPRHelper | Pending |
+| C04 | TFLiteInferenceHelper | ✅ DONE |
+| C05 | ANPRHelper | NEXT |
 | C06 | GeoHelper | Pending |
 | C07 | PDFGenerator | Pending |
 | C08 | WhatsAppSender (STUB) | Pending |
